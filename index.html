@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AP2 Fachinformatiker Systemintegration - Lernportal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎯 AP2-Lernportal</div>
+        <div class="nav-links">
+            <a href="#themen" class="nav-link">Themen</a>
+            <a href="#pruefung" class="nav-link">Prüfung</a>
+            <a href="#fortschritt" class="nav-link">Fortschritt</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <h1>Fachinformatiker Systemintegration</h1>
+        <p class="subtitle">AP2 Vorbereitung & Prüfungssimulation</p>
+        <div class="hero-stats">
+            <div class="stat">
+                <span class="stat-number">8</span>
+                <span class="stat-label">Prüfungsbereiche</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">100+</span>
+                <span class="stat-label">Fragen</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">90-180</span>
+                <span class="stat-label">Minuten Prüfung</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Themenbereiche -->
+        <section id="themen" class="section">
+            <h2>📚 Prüfungsbereiche AP2</h2>
+            <div class="subjects-grid">
+                <div class="subject-card" onclick="startQuiz('projekt')">
+                    <div class="subject-icon">📋</div>
+                    <h3>Projektmanagement</h3>
+                    <ul>
+                        <li>Wasserfall-, V-, Spiralmodell</li>
+                        <li>Agile, Scrum, Kanban</li>
+                        <li>Projektstrukturplan (PSP)</li>
+                        <li>Gantt-Diagramme, Netzplantechnik</li>
+                        <li>Risikoanalyse (FMEA)</li>
+                        <li>Ressourcenplanung</li>
+                    </ul>
+                    <span class="percentage">~30%</span>
+                </div>
+
+                <div class="subject-card" onclick="startQuiz('netzwerk')">
+                    <div class="subject-icon">🌐</div>
+                    <h3>Netzwerktechnik</h3>
+                    <ul>
+                        <li>OSI- und TCP/IP-Modell</li>
+                        <li>IPv4/IPv6, Subnetting</li>
+                        <li>VLANs, Routing (statisch/OSPF)</li>
+                        <li>Switching, Spanning Tree</li>
+                        <li>VPN (IPSec, SSL)</li>
+                        <li>Network Access Control (NAC)</li>
+                    </ul>
+                    <span class="percentage">~20%</span>
+                </div>
+
+                <div class="subject-card" onclick="startQuiz('system')">
+                    <div class="subject-icon">🖥️</div>
+                    <h3>Systemadministration</h3>
+                    <ul>
+                        <li>Windows Server, Active Directory</li>
+                        <li>Linux (Debian/RHEL), Bash</li>
+                        <li>Virtualisierung (KVM, VMware)</li>
+                        <li>Container (Docker, Kubernetes)</li>
+                        <li>Automatisierung (Ansible)</li>
+                        <li>Monitoring (Nagios, Grafana)</li>
+                    </ul>
+                    <span class="percentage">~20%</span>
+                </div>
+
+                <div class="subject-card" onclick="startQuiz('sicherheit')">
+                    <div class="subject-icon">🔒</div>
+                    <h3>IT-Sicherheit</h3>
+                    <ul>
+                        <li>DSGVO, BDSG</li>
+                        <li>ISO 27001, BSI-Grundschutz</li>
+                        <li>RBAC, ACL, Least Privilege</li>
+                        <li>Firewalls, IDS/IPS</li>
+                        <li>Verschlüsselung (AES, RSA)</li>
+                        <li>Backup-Strategien (3-2-1)</li>
+                    </ul>
+                    <span class="percentage">~15%</span>
+                </div>
+
+                <div class="subject-card" onclick="startQuiz('wirtschaft')">
+                    <div class="subject-icon">📊</div>
+                    <h3>Wirtschaft & Soziales</h3>
+                    <ul>
+                        <li>Arbeitsrecht (BUrlG, KSchG)</li>
+                        <li>Sozialversicherungen</li>
+                        <li>Betriebsrat, Mitbestimmung</li>
+                        <li>Tarifverträge, Lohnarten</li>
+                        <li>Unternehmensformen</li>
+                        <li>Amortisation, ROI</li>
+                    </ul>
+                    <span class="percentage">~10%</span>
+                </div>
+
+                <div class="subject-card" onclick="startQuiz('dokumentation')">
+                    <div class="subject-icon">📝</div>
+                    <h3>Dokumentation</h3>
+                    <ul>
+                        <li>Technische Dokumentation</li>
+                        <li>Handbücher (System, User)</li>
+                        <li>Dokumentationsstandards</li>
+                        <li>Präsentationstechnik</li>
+                        <li>ITIL Framework</li>
+                        <li>CMDB, Ticket-Systeme</li>
+                    </ul>
+                    <span class="percentage">~5%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Prüfungssimulation -->
+        <section id="pruefung" class="section pruefung-section">
+            <h2>🎓 Prüfungssimulation</h2>
+            <div class="exam-modes">
+                <button class="exam-btn" onclick="startExam('kurz')">
+                    <span class="exam-title">⚡ Kurzprüfung</span>
+                    <span class="exam-desc">10 Fragen · 15 Minuten</span>
+                </button>
+                <button class="exam-btn" onclick="startExam('standard')">
+                    <span class="exam-title">📋 Standardprüfung</span>
+                    <span class="exam-desc">30 Fragen · 45 Minuten</span>
+                </button>
+                <button class="exam-btn" onclick="startExam('voll')">
+                    <span class="exam-title">🏆 Vollprüfung</span>
+                    <span class="exam-desc">60 Fragen · 90 Minuten</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Quiz Interface -->
+        <div id="quiz-modal" class="modal hidden">
+            <div class="quiz-container">
+                <div class="quiz-header">
+                    <span id="question-counter">Frage 1/10</span>
+                    <span id="quiz-timer" class="timer">15:00</span>
+                    <button class="close-btn" onclick="closeQuiz()">×</button>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <div id="question-container" class="question-container">
+                    <!-- Fragen werden hier dynamisch geladen -->
+                </div>
+                <div id="quiz-controls" class="quiz-controls">
+                    <button id="next-btn" class="btn btn-primary" onclick="nextQuestion()" disabled>Weiter</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ergebnis Modal -->
+        <div id="result-modal" class="modal hidden">
+            <div class="result-container">
+                <h2 id="result-title">Prüfung beendet!</h2>
+                <div class="result-score">
+                    <span id="result-percent">0%</span>
+                    <span id="result
