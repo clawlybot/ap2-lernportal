@@ -423,6 +423,97 @@ body {
     padding: 1.5rem;
     border-top: 1px solid var(--border);
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+}
+
+/* Result Modal */
+.result-container {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    padding: 2rem;
+    text-align: center;
+}
+
+.result-score {
+    margin: 2rem 0;
+}
+
+.result-percent {
+    display: block;
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.result-status {
+    display: block;
+    font-size: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.result-status.passed {
+    color: var(--success);
+}
+
+.result-status.failed {
+    color: var(--danger);
+}
+
+.result-progress {
+    height: 20px;
+    background: var(--bg);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.result-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 10px;
+    transition: width 1s ease;
+}
+
+.result-details {
+    margin: 1.5rem 0;
+    color: var(--text-muted);
+}
+
+.result-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+/* Footer */
+footer {
+    background: var(--bg-card);
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    margin-top: 4rem;
+    border-top: 1px solid var(--border);
+}
+
+.section-desc {
+    text-align: center;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+}
+
+.question-counter {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Utilities */
+.hidden {
+    display: none !important;
 }
 
