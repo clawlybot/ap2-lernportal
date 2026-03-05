@@ -167,6 +167,11 @@ function startExam(mode) {
     };
 
     const config = modeConfig[mode];
+    if (!config) {
+        alert('Prüfungsmodus nicht gefunden');
+        return;
+    }
+
     const questions = [];
 
     // Sammle Fragen aus allen Kategorien
@@ -195,13 +200,19 @@ function startExam(mode) {
 
 // Show Question
 function showQuestion() {
-    if (!currentQuiz || currentQuestion >= currentQuiz.questions.length) {
+    if (!currentQuiz || !currentQuiz.questions || currentQuestion >= currentQuiz.questions.length) {
+        console.error('Quiz-Fehler: Keine Fragen verfügbar');
         return;
     }
 
     const question = currentQuiz.questions[currentQuestion];
     const container = document.getElementById('question-container');
     const counter = document.getElementById('question-counter');
+
+    if (!container) {
+        console.error('Fehler: question-container nicht gefunden');
+        return;
+    }
 
     counter.textContent = `Frage ${currentQuestion + 1}/${currentQuiz.questions.length}`;
 
@@ -255,7 +266,10 @@ function showQuestion() {
 
     // Update progress bar
     const progress = ((currentQuestion + 1) / currentQuiz.questions.length) * 100;
-    document.getElementById('progress-fill').style.width = progress + '%';
+    const progressFill = document.getElementById('progress-fill');
+    if (progressFill) {
+        progressFill.style.width = progress + '%';
+    }
 
     // Update buttons
     updateButtons();
@@ -263,7 +277,9 @@ function showQuestion() {
 
 // Select Answer
 function selectAnswer(index) {
-    if (questionAnswered) return;
+    if (questionAnswered || !currentQuiz || index < 0 || index >= currentQuiz.questions[currentQuestion].answers.length) {
+        return;
+    }
 
     currentQuiz.answers[currentQuestion] = index;
     questionAnswered = true;
@@ -272,6 +288,8 @@ function selectAnswer(index) {
 
 // Next Question
 function nextQuestion() {
+    if (!currentQuiz || !currentQuiz.questions) return;
+
     if (currentQuestion < currentQuiz.questions.length - 1) {
         currentQuestion++;
         questionAnswered = false;
@@ -283,6 +301,8 @@ function nextQuestion() {
 
 // Previous Question
 function prevQuestion() {
+    if (!currentQuiz || !currentQuiz.questions) return;
+
     if (currentQuestion > 0) {
         currentQuestion--;
         questionAnswered = false;
@@ -294,6 +314,8 @@ function prevQuestion() {
 function updateButtons() {
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
+
+    if (!prevBtn || !nextBtn || !currentQuiz) return;
 
     prevBtn.disabled = currentQuestion === 0;
 
@@ -311,23 +333,33 @@ function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
 
     timerInterval = setInterval(() => {
+        if (!currentQuiz) {
+            clearInterval(timerInterval);
+            return;
+        }
+
         const elapsed = Math.floor((new Date() - quizStartTime) / 1000);
-        const timeLimit = currentQuiz.mode ? currentQuiz.timeLimit : (currentQuiz.questions.length * 90); // Default 90 sec per question
+        const timeLimit = currentQuiz.timeLimit || (currentQuiz.questions.length * 90); // Default 90 sec per question
         const remaining = Math.max(0, timeLimit - elapsed);
 
         const minutes = Math.floor(remaining / 60);
         const seconds = remaining % 60;
         const timerEl = document.getElementById('quiz-timer');
-        timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-        if (remaining <= 60 && remaining > 0) {
-            timerEl.classList.add('warning');
-        } else if (remaining === 0) {
-            timerEl.classList.add('danger');
-            clearInterval(timerInterval);
-            setTimeout(endQuiz, 2000);
-        } else {
-            timerEl.classList.remove('warning', 'danger');
+        if (timerEl) {
+            timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            if (remaining <= 60 && remaining > 0) {
+                timerEl.classList.add('warning');
+                timerEl.classList.remove('danger');
+            } else if (remaining === 0) {
+                timerEl.classList.add('danger');
+                timerEl.classList.remove('warning');
+                clearInterval(timerInterval);
+                setTimeout(endQuiz, 1000);
+            } else {
+                timerEl.classList.remove('warning', 'danger');
+            }
         }
     }, 1000);
 }
@@ -335,6 +367,11 @@ function startTimer() {
 // End Quiz
 function endQuiz() {
     clearInterval(timerInterval);
+
+    if (!currentQuiz || !currentQuiz.questions) {
+        alert('Fehler: Quiz-Daten nicht gefunden');
+        return;
+    }
 
     const correct = currentQuiz.answers.filter((ans, idx) => {
         return ans === currentQuiz.questions[idx].correct;
@@ -367,54 +404,77 @@ function endQuiz() {
     document.getElementById('quiz-modal').classList.add('hidden');
     document.getElementById('result-modal').classList.remove('hidden');
 
-    // Update progress tracking
-    updateProgress(currentQuiz.category || 'allgemein', percent);
+    // Update progress tracking (nur für Kategorien, nicht für Exams)
+    if (currentQuiz.category) {
+        updateProgress(currentQuiz.category, percent);
+    }
 }
 
 // Close Quiz
 function closeQuiz() {
     if (confirm('Möchtest du das Quiz wirklich abbrechen?')) {
         clearInterval(timerInterval);
-        document.getElementById('quiz-modal').classList.add('hidden');
+        const modal = document.getElementById('quiz-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
         currentQuiz = null;
+        currentQuestion = 0;
+        questionAnswered = false;
     }
 }
 
 // Close Result
 function closeResult() {
-    document.getElementById('result-modal').classList.add('hidden');
+    const modal = document.getElementById('result-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    currentQuiz = null;
+    currentQuestion = 0;
+    questionAnswered = false;
 }
 
 // Update Progress
 function updateProgress(category, percent) {
+    if (!category) return;
+
     const progressEl = document.getElementById(category + '-percent');
     const barEl = document.getElementById(category + '-bar');
 
     if (progressEl && barEl) {
-        const currentPercent = parseInt(progressEl.textContent);
-        const newPercent = Math.max(currentPercent, percent);
+        try {
+            const currentPercent = parseInt(progressEl.textContent) || 0;
+            const newPercent = Math.max(currentPercent, percent);
 
-        progressEl.textContent = newPercent + '%';
-        barEl.style.width = newPercent + '%';
+            progressEl.textContent = newPercent + '%';
+            barEl.style.width = newPercent + '%';
 
-        localStorage.setItem(`progress_${category}`, newPercent);
+            localStorage.setItem(`progress_${category}`, newPercent);
+        } catch (e) {
+            console.error('Fehler beim Aktualisieren des Fortschritts:', e);
+        }
     }
 }
 
 // Load saved progress
 function loadProgress() {
-    const categories = ['projekt', 'netzwerk', 'system', 'sicherheit', 'wirtschaft', 'dokumentation'];
-    categories.forEach(cat => {
-        const saved = localStorage.getItem(`progress_${cat}`);
-        if (saved) {
-            const progressEl = document.getElementById(cat + '-percent');
-            const barEl = document.getElementById(cat + '-bar');
-            if (progressEl && barEl) {
-                progressEl.textContent = saved + '%';
-                barEl.style.width = saved + '%';
+    try {
+        const categories = ['projekt', 'netzwerk', 'system', 'sicherheit', 'wirtschaft', 'dokumentation'];
+        categories.forEach(cat => {
+            const saved = localStorage.getItem(`progress_${cat}`);
+            if (saved) {
+                const progressEl = document.getElementById(cat + '-percent');
+                const barEl = document.getElementById(cat + '-bar');
+                if (progressEl && barEl) {
+                    progressEl.textContent = saved + '%';
+                    barEl.style.width = saved + '%';
+                }
             }
-        }
-    });
+        });
+    } catch (e) {
+        console.error('Fehler beim Laden des Fortschritts:', e);
+    }
 }
 
 // Load progress on page load
