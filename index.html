@@ -9,6 +9,11 @@
 <body>
     <nav class="navbar">
         <div class="logo">🎯 AP2-Lernportal</div>
+        <div class="nav-links">
+            <a href="#themen" class="nav-link">Themen</a>
+            <a href="#pruefung" class="nav-link">Prüfung</a>
+            <a href="#fortschritt" class="nav-link">Fortschritt</a>
+        </div>
     </nav>
 
     <header class="hero">
@@ -16,7 +21,7 @@
         <p class="subtitle">AP2 Vorbereitung & Prüfungssimulation</p>
         <div class="hero-stats">
             <div class="stat">
-                <span class="stat-number">6</span>
+                <span class="stat-number">8</span>
                 <span class="stat-label">Prüfungsbereiche</span>
             </div>
             <div class="stat">
@@ -39,11 +44,12 @@
                     <div class="subject-icon">📋</div>
                     <h3>Projektmanagement</h3>
                     <ul>
-                        <li>Phasenmodelle (Wasserfall, V-Modell, Agile)</li>
+                        <li>Wasserfall-, V-, Spiralmodell</li>
+                        <li>Agile, Scrum, Kanban</li>
                         <li>Projektstrukturplan (PSP)</li>
-                        <li>Gantt-Diagramme</li>
+                        <li>Gantt-Diagramme, Netzplantechnik</li>
                         <li>Risikoanalyse (FMEA)</li>
-                        <li>Amortisationsrechnung</li>
+                        <li>Ressourcenplanung</li>
                     </ul>
                     <span class="percentage">~30%</span>
                 </div>
@@ -54,9 +60,10 @@
                     <ul>
                         <li>OSI- und TCP/IP-Modell</li>
                         <li>IPv4/IPv6, Subnetting</li>
-                        <li>VLANs, Routing</li>
+                        <li>VLANs, Routing (statisch/OSPF)</li>
+                        <li>Switching, Spanning Tree</li>
                         <li>VPN (IPSec, SSL)</li>
-                        <li>Network Security</li>
+                        <li>Network Access Control (NAC)</li>
                     </ul>
                     <span class="percentage">~20%</span>
                 </div>
@@ -65,11 +72,12 @@
                     <div class="subject-icon">🖥️</div>
                     <h3>Systemadministration</h3>
                     <ul>
-                        <li>Windows Server / AD</li>
-                        <li>Linux Administration</li>
-                        <li>Virtualisierung</li>
-                        <li>Container (Docker/K8s)</li>
-                        <li>Monitoring</li>
+                        <li>Windows Server, Active Directory</li>
+                        <li>Linux (Debian/RHEL), Bash</li>
+                        <li>Virtualisierung (KVM, VMware)</li>
+                        <li>Container (Docker, Kubernetes)</li>
+                        <li>Automatisierung (Ansible)</li>
+                        <li>Monitoring (Nagios, Grafana)</li>
                     </ul>
                     <span class="percentage">~20%</span>
                 </div>
@@ -79,10 +87,11 @@
                     <h3>IT-Sicherheit</h3>
                     <ul>
                         <li>DSGVO, BDSG</li>
-                        <li>ISO 27001, BSI</li>
-                        <li>RBAC, ACL</li>
-                        <li>Verschlüsselung</li>
-                        <li>Backup-Strategien</li>
+                        <li>ISO 27001, BSI-Grundschutz</li>
+                        <li>RBAC, ACL, Least Privilege</li>
+                        <li>Firewalls, IDS/IPS</li>
+                        <li>Verschlüsselung (AES, RSA)</li>
+                        <li>Backup-Strategien (3-2-1)</li>
                     </ul>
                     <span class="percentage">~15%</span>
                 </div>
@@ -91,11 +100,12 @@
                     <div class="subject-icon">📊</div>
                     <h3>Wirtschaft & Soziales</h3>
                     <ul>
-                        <li>Arbeitsrecht</li>
+                        <li>Arbeitsrecht (BUrlG, KSchG)</li>
                         <li>Sozialversicherungen</li>
-                        <li>Betriebsrat</li>
-                        <li>Tarifverträge</li>
+                        <li>Betriebsrat, Mitbestimmung</li>
+                        <li>Tarifverträge, Lohnarten</li>
                         <li>Unternehmensformen</li>
+                        <li>Amortisation, ROI</li>
                     </ul>
                     <span class="percentage">~10%</span>
                 </div>
@@ -105,10 +115,11 @@
                     <h3>Dokumentation</h3>
                     <ul>
                         <li>Technische Dokumentation</li>
+                        <li>Handbücher (System, User)</li>
+                        <li>Dokumentationsstandards</li>
+                        <li>Präsentationstechnik</li>
                         <li>ITIL Framework</li>
-                        <li>Handbücher</li>
-                        <li>Präsentation</li>
-                        <li>CMDB</li>
+                        <li>CMDB, Ticket-Systeme</li>
                     </ul>
                     <span class="percentage">~5%</span>
                 </div>
@@ -118,7 +129,6 @@
         <!-- Prüfungssimulation -->
         <section id="pruefung" class="section pruefung-section">
             <h2>🎓 Prüfungssimulation</h2>
-            <p class="section-desc">Teste dein Wissen unter Prüfungsbedingungen</p>
             <div class="exam-modes">
                 <button class="exam-btn" onclick="startExam('kurz')">
                     <span class="exam-title">⚡ Kurzprüfung</span>
@@ -134,49 +144,31 @@
                 </button>
             </div>
         </section>
-    </main>
 
-    <!-- Quiz Modal -->
-    <div id="quiz-modal" class="modal hidden">
-        <div class="quiz-container">
-            <div class="quiz-header">
-                <span id="question-counter" class="question-counter">Frage 1/10</span>
-                <span id="quiz-timer" class="timer">15:00</span>
-                <button class="close-btn" onclick="closeQuiz()">×</button>
-            </div>
-            <div class="progress-bar">
-                <div id="progress-fill" class="progress-fill"></div>
-            </div>
-            <div id="question-container" class="question-container">
-                <!-- Fragen werden hier dynamisch geladen -->
-            </div>
-            <div class="quiz-controls">
-                <button id="next-btn" class="btn btn-primary" onclick="nextQuestion()" disabled>Weiter</button>
+        <!-- Quiz Interface -->
+        <div id="quiz-modal" class="modal hidden">
+            <div class="quiz-container">
+                <div class="quiz-header">
+                    <span id="question-counter">Frage 1/10</span>
+                    <span id="quiz-timer" class="timer">15:00</span>
+                    <button class="close-btn" onclick="closeQuiz()">×</button>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <div id="question-container" class="question-container">
+                    <!-- Fragen werden hier dynamisch geladen -->
+                </div>
+                <div id="quiz-controls" class="quiz-controls">
+                    <button id="next-btn" class="btn btn-primary" onclick="nextQuestion()" disabled>Weiter</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Ergebnis Modal -->
-    <div id="result-modal" class="modal hidden">
-        <div class="result-container">
-            <h2 id="result-title">Prüfung beendet!</h2>
-            <div class="result-score">
-                <span id="result-percent" class="result-percent">0%</span>
-                <span id="result-status" class="result-status">Bestanden</span>
-            </div>
-            <div class="result-progress">
-                <div id="result-bar" class="result-bar"></div>
-            </div>
-            <div id="result-details" class="result-details">
-                <!-- Details werden dynamisch eingefügt -->
-            </div>
-            <div class="result-actions">
-                <button class="btn btn-secondary" onclick="closeResult()">Schließen</button>
-                <button class="btn btn-primary" onclick="location.reload()">Neue Prüfung</button>
-            </div>
-        </div>
-    </div>
-
-    <footer>
-        <p>AP2 Lernportal für Fachinformatiker Systemintegration</p>
-        <p style="margin-top: 0.5rem; opacity: 0.7
+        <!-- Ergebnis Modal -->
+        <div id="result-modal" class="modal hidden">
+            <div class="result-container">
+                <h2 id="result-title">Prüfung beendet!</h2>
+                <div class="result-score">
+                    <span id="result-percent">0%</span>
+                    <span id="result
