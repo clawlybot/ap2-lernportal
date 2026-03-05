@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AURORA-7 SQL Space Station</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g: #00ff9d; --c: #00e5ff; --r: #ff4d4d; --y: #ffd700;
+  --bg: #060a10; --bg2: #080c14; --bg3: #070b12; --bg4: #04080e;
+  --font: 'JetBrains Mono', monospace; --orb: 'Orbitron', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--g); font-family: var(--font); }
+
+@keyframes scanmove { 0%{top:-100%} 100%{top:100dvh} }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes glow { 0%,100%{box-shadow:0 0 4px #00ff9d40} 50%{box-shadow:0 0 20px #00ff9d60,0 0 40px #00ff9d20} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-3px)} 40%,80%{transform:translateX(3px)} }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #00ff9d20; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #00ff9d40; }
+
+/* ── BOOT ── */
+#boot-screen {
+  position: fixed; inset: 0; z-index: 10000; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+#boot-screen .title { font-family: var(--orb); font-size: 24px; font-weight: 900; color: var(--g); text-shadow: 0 0 30px #00ff9d60; letter-spacing: 4px; }
+#boot-screen .sub { font-size: 12px; color: #00ff9d60; animation: blink 1s infinite; }
+
+/* ── APP SHELL ── */
+#app {
+  display: none; width: 100vw; height: 100dvh;
+  flex-direction: column; overflow: hidden; position: relative;
+}
+#app.visible { display: flex; }
+
+/* Scanline */
+.scanline { position: fixed; inset: 0; pointer-events: none; z-index: 9999; background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,157,0.012) 2px,rgba(0,255,157,0.012) 4px); }
+.scanline::after { content:''; position:absolute; left:0; right:0; height:3px; background:linear-gradient(transparent,rgba(0,255,157,0.06),transparent); animation:scanmove 5s linear infinite; }
+
+/* ── HEADER ── */
+header {
+  height: 48px; min-height: 48px; background: linear-gradient(180deg,#0c1219,var(--bg));
+  border-bottom: 1px solid #00ff9d20; display: flex; align-items: center;
+  padding: 0 12px; gap: 8px; z-index: 10; flex-shrink: 0;
+}
+header .logo { font-family: var(--orb); font-size: 15px; font-weight: 900; color: var(--g); text-shadow: 0 0 12px #00ff9d50; letter-spacing: 3px; }
+header .sep { width: 1px; height: 20px; background: #00ff9d20; }
+header .label { font-family: var(--orb); font-size: 9px; color: #00ff9d60; letter-spacing: 4px; }
+header .spacer { flex: 1; }
+header .count { font-size: 11px; color: #00ff9d70; }
+.progress-bar { width: 100px; height: 5px; background: #0d1117; border-radius: 3px; border: 1px solid #00ff9d15; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg,var(--g),var(--c)); border-radius: 3px; transition: width 0.4s; box-shadow: 0 0 6px #00ff9d50; }
+
+/* ── MAIN ── */
+#main { flex: 1; display: flex; overflow: hidden; }
+
+/* Panels */
+.panel { display: flex; flex-direction: column; overflow: hidden; background: var(--bg2); }
+#panel-left { width: 260px; min-width: 260px; border-right: 1px solid #00ff9d12; }
+#panel-center { flex: 1; min-width: 0; background: var(--bg); }
+#panel-right { width: 260px; min-width: 260px; border-left: 1px solid #00ff9d12; }
+
+/* ── MISSION LIST ── */
+.mode-tabs { display: flex; padding: 8px 8px 0; gap: 4px; flex-shrink: 0; }
+.mode-tab {
+  flex: 1; padding: 7px 0; border-radius: 3px; cursor: pointer; font-family: var(--orb);
+  font-size: 9px; letter-spacing: 2px; font-weight: 600; border: 1px solid #00ff9d15;
+  background: transparent; color: #00ff9d50; transition: all 0.12s; text-align: center;
+}
+.mode-tab.active-missions { background: #00ff9d12; border-color: #00ff9d35; color: var(--g); }
+.mode-tab.active-sandbox { background: #00e5ff12; border-color: #00e5ff35; color: var(--c); }
+
+.mission-list { flex: 1; overflow-y: auto; padding: 6px; -webkit-overflow-scrolling: touch; }
+.mission-btn {
+  width: 100%; padding: 8px 10px; margin-bottom: 2px; background: transparent;
+  border: 1px solid transparent; border-radius: 3px; cursor: pointer; text-align: left;
+  font-family: var(--font); display: flex; align-items: center; gap: 8px;
+  transition: all 0.12s; outline: none; color: inherit;
+}
+.mission-btn:disabled { cursor: not-allowed; opacity: 0.3; }
+.mission-btn.active { background: #00ff9d08; border-color: #00ff9d25; }
+.mission-badge {
+  width: 22px; height: 22px; min-width: 22px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+}
+.mission-badge.done { background: #00ff9d15; border: 1px solid #00ff9d40; color: var(--g); }
+.mission-badge.locked { background: #ffffff06; border: 1px solid #ffffff10; color: #ffffff25; }
+.mission-badge.open { background: #00e5ff08; border: 1px solid #00e5ff25; color: var(--c); }
+.mission-title { font-size: 11px; color: #00ff9d60; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mission-btn.active .mission-title { color: var(--g); }
+.mission-btn .mission-title.done-title { color: #00ff9d70; }
+.mission-cat { font-size: 9px; color: #00ff9d30; margin-top: 1px; }
+.mission-cat.bonus { color: #ffd70080; }
+
+/* ── TERMINAL ── */
+.story-box {
+  padding: 14px 18px; border-bottom: 1px solid #00ff9d12; background: var(--bg3);
+  animation: fadeUp 0.25s; flex-shrink: 0;
+}
+.story-title {
+  font-family: var(--orb); font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px;
+  text-shadow: 0 0 8px currentColor;
+}
+.story-title.cyan { color: var(--c); }
+.story-title.gold { color: var(--y); }
+.story-text { font-size: 12px; color: #00ff9d90; line-height: 1.5; margin-bottom: 6px; }
+.task-box {
+  font-size: 11px; color: var(--c); padding: 6px 10px; background: #00e5ff06;
+  border: 1px solid #00e5ff18; border-radius: 3px;
+}
+.task-box .lbl { color: #00e5ff60; }
+
+.sandbox-bar {
+  padding: 14px 18px; border-bottom: 1px solid #00e5ff15; background: var(--bg3);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.sandbox-bar .s-title { font-family: var(--orb); font-size: 12px; font-weight: 700; color: var(--c); letter-spacing: 1px; }
+.sandbox-bar .s-sub { font-size: 11px; color: #00e5ff60; margin-top: 2px; }
+.btn-reset {
+  padding: 5px 10px; background: #ff4d4d08; border: 1px solid #ff4d4d25;
+  color: var(--r); font-family: var(--font); font-size: 10px; border-radius: 3px; cursor: pointer; flex-shrink: 0;
+}
+
+.editor-wrap { padding: 10px 18px; border-bottom: 1px solid #00ff9d12; flex-shrink: 0; }
+.editor-header { display: flex; align-items: center; margin-bottom: 6px; gap: 6px; }
+.editor-header .lbl { font-family: var(--orb); font-size: 8px; color: #00ff9d40; letter-spacing: 3px; }
+.editor-header .line { flex: 1; height: 1px; background: #00ff9d10; }
+.editor-header .shortcut { font-size: 9px; color: #00ff9d25; }
+.editor-box { position: relative; }
+#sql-input {
+  width: 100%; height: 100px; background: var(--bg4); border: 1px solid #00ff9d18;
+  border-radius: 3px; padding: 10px 12px; color: var(--g); font-family: var(--font);
+  font-size: 13px; line-height: 1.5; resize: none; outline: none; caret-color: var(--g);
+  transition: border-color 0.2s; -webkit-appearance: none;
+}
+#sql-input.error { border-color: #ff4d4d50; animation: shake 0.35s ease; }
+#sql-input::placeholder { color: #00ff9d25; }
+.btn-run {
+  position: absolute; bottom: 8px; right: 8px; padding: 6px 16px;
+  background: linear-gradient(135deg,#00ff9d15,#00e5ff15); border: 1px solid #00ff9d35;
+  color: var(--g); font-family: var(--orb); font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; border-radius: 3px; cursor: pointer; text-shadow: 0 0 6px #00ff9d30;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-run:active { transform: scale(0.97); }
+
+.output-area { flex: 1; overflow: auto; padding: 10px 18px; -webkit-overflow-scrolling: touch; }
+
+/* Result cards */
+.card-success {
+  padding: 12px 14px; margin-bottom: 10px; background: #00ff9d06;
+  border: 1px solid #00ff9d25; border-radius: 3px; animation: glow 2s ease-in-out 3;
+}
+.card-success .c-title { font-family: var(--orb); font-size: 10px; font-weight: 700; color: var(--g); letter-spacing: 2px; margin-bottom: 4px; }
+.card-success .c-text { font-size: 12px; color: #00ff9d90; line-height: 1.4; }
+.card-success .trophy { margin-top: 8px; color: var(--y); font-family: var(--orb); font-size: 12px; text-shadow: 0 0 10px #ffd70040; }
+.btn-next {
+  margin-top: 8px; padding: 6px 14px; background: #00ff9d10; border: 1px solid #00ff9d25;
+  color: var(--g); font-family: var(--font); font-size: 11px; border-radius: 3px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-error {
+  padding: 12px 14px; margin-bottom: 10px; background: #ff4d4d06;
+  border: 1px solid #ff4d4d25; border-radius: 3px; animation: fadeUp 0.2s;
+}
+.card-error .c-title { font-family: var(--orb); font-size: 9px; color: var(--r); letter-spacing: 2px; margin-bottom: 3px; }
+.card-error .c-text { font-size: 12px; color: #ff4d4d90; line-height: 1.4; }
+
+.card-modify {
+  padding: 12px 14px; background: #00e5ff06; border: 1px solid #00e5ff18;
+  border-radius: 3px; animation: fadeUp 0.2s;
+}
+.card-modify .c-title { font-family: var(--orb); font-size: 9px; color: var(--c); letter-spacing: 2px; }
+.card-modify .c-text { font-size: 12px; color: #00e5ff80; margin-top: 3px; }
+
+.result-label { font-family: var(--orb); font-size: 8px; color: #00ff9d40; letter-spacing: 3px; margin-bottom: 6px; }
+.result-wrap { overflow: auto; border: 1px solid #00ff9d12; border-radius: 3px; -webkit-overflow-scrolling: touch; animation: fadeUp 0.2s; }
+.result-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.result-table th {
+  padding: 7px 10px; text-align: left; background: #00ff9d06; border-bottom: 1px solid #00ff9d15;
+  color: var(--c); font-weight: 400; font-size: 10px; letter-spacing: 1px; font-family: var(--orb);
+  white-space: nowrap; position: sticky; top: 0; z-index: 1;
+}
+.result-table td {
+  padding: 5px 10px; border-bottom: 1px solid #00ff9d06; color: #00ff9d80; white-space: nowrap;
+}
+.result-table td.null-val { color: #ff4d4d50; }
+.result-table tr:nth-child(even) { background: #00ff9d03; }
+.result-table .empty-row td { padding: 16px; text-align: center; color: #00ff9d30; font-style: italic; }
+
+/* ── HELP PANEL ── */
+.hints-section { padding: 12px; border-bottom: 1px solid #00ff9d12; flex-shrink: 0; }
+.hints-title { font-family: var(--orb); font-size: 9px; color: var(--y); letter-spacing: 2px; margin-bottom: 8px; }
+.hint-item {
+  padding: 8px 10px; margin-bottom: 4px; border-radius: 3px;
+  font-size: 11px; line-height: 1.4; transition: all 0.15s; word-break: break-word;
+}
+.hint-item.revealed { background: #ffd70006; border: 1px solid #ffd70018; color: #ffd70090; }
+.hint-item.hidden { background: #ffffff04; border: 1px solid #ffffff08; color: #ffffff18; cursor: pointer; }
+
+.schema-section { flex: 1; overflow: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+.btn-schema {
+  width: 100%; padding: 8px 10px; border: 1px solid #00e5ff18; color: var(--c);
+  font-family: var(--orb); font-size: 9px; letter-spacing: 2px; border-radius: 3px;
+  cursor: pointer; margin-bottom: 8px; text-align: left; font-weight: 600; background: transparent;
+}
+.btn-schema.open { background: #00e5ff08; }
+.schema-card { margin-bottom: 8px; border: 1px solid #00ff9d10; border-radius: 3px; overflow: hidden; }
+.schema-card .s-header {
+  padding: 6px 10px; background: #00ff9d06; font-family: var(--orb); font-size: 10px;
+  color: var(--g); letter-spacing: 1px; display: flex; justify-content: space-between;
+}
+.schema-card .s-header .s-count { color: #00ff9d35; font-size: 9px; }
+.schema-card .s-cols { padding: 4px 10px; }
+.schema-card .s-col { font-size: 10px; padding: 2px 0; color: #00ff9d65; display: flex; justify-content: space-between; }
+.schema-card .s-col .s-type { color: #00e5ff40; font-size: 9px; }
+.schema-card .s-sample { border-top: 1px solid #00ff9d06; padding: 4px 10px; overflow: auto; }
+.schema-card .s-sample .s-lbl { font-size: 8px; color: #00ff9d25; letter-spacing: 1px; margin-bottom: 3px; }
+.schema-card .s-sample td { padding: 1px 3px; color: #00ff9d40; white-space: nowrap; font-size: 9px; max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
+.schema-note { font-size: 10px; color: #00ff9d25; padding: 8px; text-align: center; line-height: 1.5; }
+
+/* ── MOBILE BOTTOM NAV ── */
+#mobile-nav {
+  display: none; height: 56px; min-height: 56px; background: linear-gradient(0deg,#080c14,#0a0f17);
+  border-top: 1px solid #00ff9d20; align-items: center; justify-content: space-around;
+  padding: 0 8px; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 10; flex-shrink: 0;
+}
+.nav-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 6px 0; background: transparent; border: none; color: #00ff9d40;
+  font-family: var(--orb); font-size: 8px; letter-spacing: 1px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: color 0.15s; position: relative;
+}
+.nav-tab.active { color: var(--g); }
+.nav-tab.active::before {
+  content: ''; position: absolute; top: 0; left: 25%; right: 25%;
+  height: 2px; background: var(--g); border-radius: 1px; box-shadow: 0 0 6px #00ff9d60;
+}
+.nav-tab .icon { font-size: 18px; line-height: 1; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  header { height: 44px; min-height: 44px; }
+  header .logo { font-size: 13px; letter-spacing: 2px; }
+  header .sep, header .label { display: none; }
+  .progress-bar { width: 60px; }
+
+  #main { flex-direction: column; }
+  #panel-left, #panel-right { display: none; }
+  #panel-center { flex: 1; }
+
+  #app.mobile-missions #panel-center { display: none; }
+  #app.mobile-missions #panel-left { display: flex; width: 100%; min-width: 0; border: none; flex: 1; }
+
+  #app.mobile-help #panel-center { display: none; }
+  #app.mobile-help #panel-right { display: flex; width: 100%; min-width: 0; border: none; flex: 1; }
+
+  #mobile-nav { display: flex; }
+
+  .story-box { padding: 12px 14px; }
+  .story-title { font-size: 11px; }
+  .story-text { font-size: 11px; }
+  .task-box { font-size: 11px; }
+  .sandbox-bar { padding: 12px 14px; }
+  .editor-wrap { padding: 10px 14px; }
+  #sql-input { height: 80px; padding: 10px 10px 36px; }
+  .editor-header .shortcut { display: none; }
+  .output-area { padding: 10px 14px; }
+  .result-table { font-size: 11px; }
+  .result-table th { padding: 6px 8px; font-size: 9px; }
+  .result-table td { padding: 4px 8px; }
+  .mission-btn { padding: 10px 12px; }
+  .mission-title { font-size: 12px; }
+  .hint-item { font-size: 12px; }
+  .btn-run { padding: 8px 16px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- BOOT SCREEN -->
+<div id="boot-screen">
+  <div class="title">AURORA-7</div>
+  <div class="sub">Terminal wird initialisiert...</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="scanline"></div>
+
+  <header>
+    <div class="logo">AURORA-7</div>
+    <div class="sep"></div>
+    <div class="label">SQL TERMINAL</div>
+    <div class="spacer"></div>
+    <span class="count" id="hdr-count">0/15</span>
+    <div class="progress-bar"><div class="progress-fill" id="hdr-progress" style="width:0%"></div></div>
+  </header>
+
+  <div id="main">
+    <!-- LEFT: Missions -->
+    <div class="panel" id="panel-left">
+      <div class="mode-tabs">
+        <button class="mode-tab active-missions" id="tab-missions" onclick="setMode(false)">MISSIONEN</button>
+        <button class="mode-tab" id="tab-sandbox" onclick="setMode(true)">SANDBOX</button>
+      </div>
+      <div class="mission-list" id="mission-list"></div>
+    </div>
+
+    <!-- CENTER: Terminal -->
+    <div class="panel" id="panel-center">
+      <div id="story-area"></div>
+      <div class="editor-wrap">
+        <div class="editor-header">
+          <span class="lbl">SQL INPUT</span>
+          <div class="line"></div>
+          <span class="shortcut">Ctrl+Enter</span>
+        </div>
+        <div class="editor-box">
+          <textarea id="sql-input" spellcheck="false" autocapitalize="none" autocorrect="off" placeholder="SELECT * FROM astronauts;"></textarea>
+          <button class="btn-run" onclick="runQuery()">RUN ▶</button>
+        </div>
+      </div>
+      <div class="output-area" id="output-area"></div>
+    </div>
+
+    <!-- RIGHT: Help -->
+    <div class="panel" id="panel-right">
+      <div id="hints-area"></div>
+      <div class="schema-section" id="schema-area"></div>
+    </div>
+  </div>
+
+  <!-- MOBILE NAV -->
+  <nav id="mobile-nav">
+    <button class="nav-tab active" data-tab="terminal" onclick="setMobileTab('terminal')">
+      <span class="icon">⌨</span>TERMINAL
+    </button>
+    <button class="nav-tab" data-tab="missions" onclick="setMobileTab('missions')">
+      <span class="icon">🎯</span>MISSIONEN
+    </button>
+    <button class="nav-tab" data-tab="help" onclick="setMobileTab('help')">
+      <span class="icon">📋</span>HILFE
+    </button>
+  </nav>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// AURORA-7 SQL SPACE STATION - Standalone Vanilla JS
+// ═══════════════════════════════════════════════════════════════
+
+// ─── AUDIO ──────────────────────────────────────────────────────
+const Audio = (() => {
+  let ctx = null;
+  const getCtx = () => { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); return ctx; };
+  const play = (f,d,t="square",v=0.06) => { try { const c=getCtx(),o=c.createOscillator(),g=c.createGain(); o.type=t;o.frequency.value=f; g.gain.setValueAtTime(v,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d); o.connect(g);g.connect(c.destination); o.start();o.stop(c.currentTime+d); } catch(e){} };
+  return {
+    success:()=>{play(523,.1);setTimeout(()=>play(659,.1),100);setTimeout(()=>play(784,.15),200)},
+    error:()=>{play(200,.15,"sawtooth",.05);setTimeout(()=>play(150,.2,"sawtooth",.05),150)},
+    click:()=>play(800,.05,"sine",.03),
+    hint:()=>play(440,.1,"sine",.04),
+    boot:()=>{for(let i=0;i<5;i++) setTimeout(()=>play(300+i*100,.08,"sine",.03),i*60)}
+  };
+})();
+
+// ─── DATABASE ───────────────────────────────────────────────────
+const INIT_DB = {
+  astronauts:{columns:["id","name","rank","department","age","oxygen_level"],types:["INT","TEXT","TEXT","TEXT","INT","INT"],rows:[[1,"Elena Voss","Commander","Command",42,98],[2,"Jin Tanaka","Lieutenant","Engineering",35,75],[3,"Amir Hassan","Specialist","Medical",29,92],[4,"Sara Chen","Technician","Engineering",31,68],[5,"Oleg Petrov","Sergeant","Security",38,88],[6,"Mia Torres","Specialist","Science",27,95],[7,"Karl Weber","Technician","Engineering",33,55],[8,"Lena Okafor","Lieutenant","Medical",36,90],[9,"Yuki Sato","Specialist","Science",28,82],[10,"Dmitri Volkov","Sergeant","Security",41,70]]},
+  modules:{columns:["id","name","status","capacity","commander_id"],types:["INT","TEXT","TEXT","INT","INT"],rows:[[1,"Alpha Hub","online",20,1],[2,"Beta Lab","online",12,6],[3,"Gamma Dock","maintenance",8,5],[4,"Delta Quarters","online",30,1],[5,"Epsilon Medbay","critical",10,8],[6,"Zeta Storage","offline",50,2]]},
+  supplies:{columns:["id","item_name","quantity","unit","module_id","expiry_date"],types:["INT","TEXT","INT","TEXT","INT","TEXT"],rows:[[1,"Oxygen Tanks",150,"units",1,"2026-12-01"],[2,"Food Rations",80,"kg",4,"2026-06-15"],[3,"Medical Kits",12,"units",5,"2027-03-01"],[4,"Spare Parts",200,"units",6,"2030-01-01"],[5,"Water Filters",5,"units",3,"2026-04-01"],[6,"Battery Cells",45,"units",6,"2028-06-01"],[7,"Antibiotics",3,"units",5,"2026-05-10"],[8,"Fuel Rods",20,"units",3,"2029-01-01"],[9,"Protein Packs",15,"kg",4,"2026-03-20"],[10,"Cooling Fluid",8,"liters",2,"2027-09-01"]]},
+  missions:{columns:["id","title","status","assigned_to","priority","launch_date"],types:["INT","TEXT","TEXT","INT","INT","TEXT"],rows:[[1,"Hull Inspection","completed",2,3,"2026-01-15"],[2,"Satellite Repair","active",4,5,"2026-02-20"],[3,"Supply Run","pending",5,2,"2026-03-10"],[4,"Lab Experiment","active",6,4,"2026-02-01"],[5,"Medical Scan","completed",3,1,"2026-01-20"],[6,"Module Repair","active",7,5,"2026-02-25"],[7,"Data Relay","pending",9,3,"2026-04-01"]]},
+  incidents:{columns:["id","description","severity","module_id","reported_by","resolved"],types:["INT","TEXT","INT","INT","INT","INT"],rows:[[1,"Oxygen leak in ventilation shaft",5,5,3,0],[2,"Power fluctuation in lab equipment",3,2,6,1],[3,"Door seal malfunction",4,3,5,0],[4,"Temperature anomaly in quarters",2,4,1,1],[5,"Communication array interference",4,1,2,0],[6,"Water recycler failure",5,5,8,0],[7,"Minor hull vibration",1,6,10,1]]}
+};
+
+// ─── MISSIONS ───────────────────────────────────────────────────
+const MISSIONS=[
+  {id:1,title:"Erste Stationsuebersicht",category:"SELECT *",story:"Willkommen auf AURORA-7, Techniker. Rufe als erstes alle Astronauten-Daten ab.",success:"Crew-Manifest geladen. 10 Besatzungsmitglieder identifiziert.",task:"Zeige alle Daten aus der Tabelle 'astronauts'.",hints:["SELECT * waehlt alle Spalten.","FROM astronauts gibt die Tabelle an.","SELECT * FROM astronauts"],validate:r=>r.type==="result"&&r.columns.length>=6&&r.rows.length===10},
+  {id:2,title:"Crew-Identifikation",category:"SELECT",story:"Commander Voss braucht nur Namen und Raenge fuer den Rapport.",success:"Rapport-Liste generiert.",task:"Zeige nur 'name' und 'rank' aller Astronauten.",hints:["Einzelne Spalten statt * angeben.","SELECT name, rank FROM ...","SELECT name, rank FROM astronauts"],validate:r=>r.type==="result"&&r.columns.length===2&&r.rows.length===10},
+  {id:3,title:"Engineering-Team lokalisieren",category:"WHERE",story:"Alarm! Leck im Maschinenraum! Finde alle Ingenieure.",success:"Team lokalisiert! Jin, Sara und Karl sind unterwegs.",task:"Zeige alle Astronauten im Department 'Engineering'.",hints:["WHERE filtert Ergebnisse.","Text in '': WHERE department = 'Engineering'","SELECT * FROM astronauts WHERE department = 'Engineering'"],validate:r=>r.type==="result"&&r.rows.length===3},
+  {id:4,title:"Sauerstoffkrise!",category:"ORDER BY",story:"Kritische O2-Werte! Sortiere die Crew nach Sauerstofflevel.",success:"Karl Weber hat den niedrigsten O2-Level. Medizinisches Team alarmiert!",task:"Alle Astronauten sortiert nach oxygen_level (aufsteigend).",hints:["ORDER BY sortiert Ergebnisse.","ASC = aufsteigend.","SELECT * FROM astronauts ORDER BY oxygen_level ASC"],validate:r=>{if(r.type!=="result"||r.rows.length!==10)return false;const idx=r.columns.findIndex(c=>c.toLowerCase().includes("oxygen"));return idx>=0&&r.rows.every((row,i)=>i===0||row[idx]>=r.rows[i-1][idx])}},
+  {id:5,title:"Kritische Vorratswarnung",category:"WHERE <",story:"Niedrige Bestaende! Finde Vorraete mit Menge unter 10.",success:"Wasserfilter und Antibiotika fast leer! Versorgungsmission eingeleitet.",task:"Zeige supplies mit quantity < 10.",hints:["WHERE quantity < 10","Tabelle: 'supplies'","SELECT * FROM supplies WHERE quantity < 10"],validate:r=>{if(r.type!=="result"||r.rows.length===0)return false;const qi=r.columns.findIndex(c=>c.toLowerCase()==="quantity");return qi>=0&&r.rows.every(row=>row[qi]<10)}},
+  {id:6,title:"Modulstatus-Analyse",category:"WHERE !=",story:"Welche Module sind NICHT online? Finde alle problematischen Module.",success:"Drei Module mit Problemen identifiziert.",task:"Module mit Status NICHT 'online'.",hints:["!= fuer 'nicht gleich'.","WHERE status != 'online'","SELECT * FROM modules WHERE status != 'online'"],validate:r=>r.type==="result"&&r.rows.length===3},
+  {id:7,title:"Abteilungsstaerke",category:"GROUP BY",story:"Wie viele Crew-Mitglieder hat jede Abteilung?",success:"Statistik erstellt. Engineering fuehrt.",task:"Zaehle Astronauten pro Department.",hints:["GROUP BY gruppiert Zeilen.","COUNT(*) zaehlt pro Gruppe.","SELECT department, COUNT(*) FROM astronauts GROUP BY department"],validate:r=>r.type==="result"&&r.rows.length>=4&&r.columns.length>=2},
+  {id:8,title:"Lebenserhaltungs-Check",category:"AVG",story:"Berechne den Durchschnitt aller Sauerstofflevel.",success:"O2-Durchschnitt berechnet.",task:"Durchschnittlicher oxygen_level aller Astronauten.",hints:["AVG() fuer Durchschnitt.","AS benennt das Ergebnis.","SELECT AVG(oxygen_level) FROM astronauts"],validate:r=>r.type==="result"&&r.rows.length===1&&r.rows[0][0]!=null},
+  {id:9,title:"Gefaehrdete Abteilungen",category:"HAVING",story:"Welche Abteilungen haben Durchschnitts-O2 unter 80?",success:"Kritische Abteilung identifiziert!",task:"Departments mit AVG(oxygen_level) < 80.",hints:["GROUP BY + AVG + HAVING","HAVING filtert Gruppen.","SELECT department, AVG(oxygen_level) FROM astronauts GROUP BY department HAVING AVG(oxygen_level) < 80"],validate:r=>r.type==="result"&&r.rows.length>=1},
+  {id:10,title:"Modul-Kommandanten",category:"JOIN",story:"Welcher Commander ist fuer welches Modul verantwortlich?",success:"Commander-Zuordnung erstellt!",task:"modules JOIN astronauts (commander_id = id). Modulname + Commander-Name.",hints:["JOIN verbindet Tabellen.","ON modules.commander_id = astronauts.id","SELECT modules.name, astronauts.name FROM modules JOIN astronauts ON modules.commander_id = astronauts.id"],validate:r=>r.type==="result"&&r.rows.length>=5&&r.columns.length>=2},
+  {id:11,title:"Vorrats-Inventur",category:"JOIN",story:"Welche Vorraete sind in welchem Modul?",success:"Inventur abgeschlossen!",task:"item_name, quantity und Modulname aus supplies + modules.",hints:["JOIN ueber module_id = id","supplies.module_id = modules.id","SELECT supplies.item_name, supplies.quantity, modules.name FROM supplies JOIN modules ON supplies.module_id = modules.id"],validate:r=>r.type==="result"&&r.rows.length>=8&&r.columns.length>=3},
+  {id:12,title:"ROTER ALARM!",category:"JOIN+WHERE",story:"Ungeloeste Vorfaelle mit Schweregrad >= 4 plus Modulname finden!",success:"Kritische Vorfaelle priorisiert! Du hast die Station gerettet!",task:"Incidents (resolved=0, severity>=4) mit Modulname.",hints:["JOIN incidents + modules","WHERE resolved = 0 AND severity >= 4","SELECT incidents.description, incidents.severity, modules.name FROM incidents JOIN modules ON incidents.module_id = modules.id WHERE incidents.resolved = 0 AND incidents.severity >= 4"],validate:r=>r.type==="result"&&r.rows.length>=2&&r.columns.length>=2},
+  {id:13,title:"Neues Crew-Mitglied",category:"INSERT",bonus:true,modifiesDb:true,story:"Rettungskapsel! Fuege Alex Nova ein (id=11, Cadet, Science, 24, O2=99).",success:"Willkommen an Bord, Cadet Nova!",task:"INSERT INTO astronauts ... VALUES (11, 'Alex Nova', 'Cadet', 'Science', 24, 99)",hints:["INSERT INTO tabelle (spalten) VALUES (werte)","Text in '', Zahlen ohne.","INSERT INTO astronauts (id, name, rank, department, age, oxygen_level) VALUES (11, 'Alex Nova', 'Cadet', 'Science', 24, 99)"],validate:r=>r.type==="modify"&&r.message.includes("eingefuegt")},
+  {id:14,title:"Notreparatur fertig",category:"UPDATE",bonus:true,modifiesDb:true,story:"Gamma Dock (id=3) ist repariert! Status auf 'online' setzen.",success:"Gamma Dock wieder online!",task:"UPDATE modules SET status = 'online' WHERE id = 3",hints:["UPDATE tabelle SET spalte = wert WHERE ...","WHERE nicht vergessen!","UPDATE modules SET status = 'online' WHERE id = 3"],validate:r=>r.type==="modify"&&r.message.includes("aktualisiert")},
+  {id:15,title:"Vorfall bereinigen",category:"DELETE",bonus:true,modifiesDb:true,story:"Geloester Vorfall id=7 aus dem Log entfernen.",success:"Log bereinigt! Alle Missionen geschafft!",task:"DELETE FROM incidents WHERE id = 7",hints:["DELETE FROM tabelle WHERE ...","Ohne WHERE = ALLES weg!","DELETE FROM incidents WHERE id = 7"],validate:r=>r.type==="modify"&&r.message.includes("geloescht")}
+];
+
+// ─── SQL ENGINE (Tokenizer + Parser + Executor) ─────────────────
+function tokenize(sql){const tokens=[];let i=0;const s=sql.trim();while(i<s.length){if(/\s/.test(s[i])){i++;continue}if(s[i]==='-'&&s[i+1]==='-'){while(i<s.length&&s[i]!=='\n')i++;continue}if(s[i]==="'"||s[i]==='"'){const q=s[i];let val="";i++;while(i<s.length&&s[i]!==q){val+=s[i];i++}if(i>=s.length)throw new Error("Station-Alert: Nicht geschlossener String.");i++;tokens.push({type:"STRING",value:val});continue}if(/[0-9]/.test(s[i])||(s[i]==='-'&&i+1<s.length&&/[0-9]/.test(s[i+1])&&(tokens.length===0||['OPERATOR','COMMA','LPAREN','KEYWORD'].includes(tokens[tokens.length-1].type)))){let num=s[i];i++;while(i<s.length&&/[0-9.]/.test(s[i])){num+=s[i];i++}tokens.push({type:"NUMBER",value:parseFloat(num)});continue}if(s[i]==='('){tokens.push({type:"LPAREN",value:"("});i++;continue}if(s[i]===')'){tokens.push({type:"RPAREN",value:")"});i++;continue}if(s[i]===','){tokens.push({type:"COMMA",value:","});i++;continue}if(s[i]==='*'){tokens.push({type:"STAR",value:"*"});i++;continue}if(s[i]===';'){tokens.push({type:"SEMICOLON",value:";"});i++;continue}if("!=<>".includes(s[i])){let op=s[i];i++;if(i<s.length&&"=<>!".includes(s[i])){op+=s[i];i++}tokens.push({type:"OPERATOR",value:op});continue}if(/[a-zA-Z_]/.test(s[i])){let word="";while(i<s.length&&/[a-zA-Z0-9_]/.test(s[i])){word+=s[i];i++}const upper=word.toUpperCase();const kw=["SELECT","FROM","WHERE","AND","OR","NOT","ORDER","BY","GROUP","HAVING","LIMIT","JOIN","INNER","LEFT","RIGHT","OUTER","ON","AS","INSERT","INTO","VALUES","UPDATE","SET","DELETE","CREATE","TABLE","DROP","COUNT","SUM","AVG","MIN","MAX","LIKE","IN","BETWEEN","IS","NULL","ASC","DESC","DISTINCT","CROSS"];if(kw.includes(upper)){tokens.push({type:"KEYWORD",value:upper})}else{if(i<s.length&&s[i]==='.'){i++;let col="";while(i<s.length&&/[a-zA-Z0-9_*]/.test(s[i])){col+=s[i];i++}if(col==="*"){tokens.push({type:"IDENTIFIER",value:word});tokens.push({type:"DOT",value:"."});tokens.push({type:"STAR",value:"*"})}else{tokens.push({type:"IDENTIFIER",value:word+"."+col})}}else{tokens.push({type:"IDENTIFIER",value:word})}}continue}throw new Error(`Station-Alert: Unerwartetes Zeichen '${s[i]}'.`)}return tokens}
+
+function parseSQL(sql){const tokens=tokenize(sql);if(!tokens.length)throw new Error("Station-Alert: Leere Abfrage.");let pos=0;const peek=()=>tokens[pos]||null;const advance=()=>tokens[pos++];const expect=(t,v)=>{const tk=peek();if(!tk)throw new Error(`Station-Alert: Ende der Abfrage. Erwartet: '${v||t}'`);if(tk.type!==t||(v&&tk.value!==v))throw new Error(`Station-Alert: Erwartet '${v||t}', aber '${tk.value}' gefunden.`);return advance()};const match=(t,v)=>{const tk=peek();if(tk&&tk.type===t&&(!v||tk.value===v)){advance();return true}return false};const matchKW=v=>match("KEYWORD",v);const first=peek();if(!first)throw new Error("Station-Alert: Kein Befehl.");if(first.type!=="KEYWORD")throw new Error(`Station-Alert: SQL muss mit Schluesselwort beginnen, nicht '${first.value}'.`);switch(first.value){case "SELECT":return parseSelect();case "INSERT":return parseInsert();case "UPDATE":return parseUpdate();case "DELETE":return parseDelete();case "CREATE":return parseCreate();case "DROP":return parseDrop();default:throw new Error(`Station-Alert: Unbekannter Befehl '${first.value}'.`)}
+function isKW(v){return["FROM","WHERE","GROUP","ORDER","HAVING","LIMIT","JOIN","INNER","LEFT","RIGHT","CROSS","ON","AND","OR"].includes((v||"").toUpperCase())}
+function parseSelect(){expect("KEYWORD","SELECT");const distinct=matchKW("DISTINCT");const columns=parseSelCols();expect("KEYWORD","FROM");const from=parseTRef();const joins=parseJoins();const where=matchKW("WHERE")?parseExpr():null;let groupBy=null;if(matchKW("GROUP")){expect("KEYWORD","BY");groupBy=[];do{groupBy.push(parseExpr())}while(match("COMMA"))}const having=matchKW("HAVING")?parseExpr():null;let orderBy=null;if(matchKW("ORDER")){expect("KEYWORD","BY");orderBy=[];do{const e=parseExpr();let dir="ASC";if(peek()&&peek().type==="KEYWORD"&&(peek().value==="ASC"||peek().value==="DESC"))dir=advance().value;orderBy.push({expr:e,dir})}while(match("COMMA"))}let limit=null;if(matchKW("LIMIT")){limit=Number(advance().value)}match("SEMICOLON");return{type:"SELECT",distinct,columns,from,joins,where,groupBy,having,orderBy,limit}}
+function parseSelCols(){const cols=[];do{if(peek()&&peek().type==="STAR"){advance();cols.push({expr:{type:"star"},alias:null});continue}if(peek()&&peek().type==="IDENTIFIER"&&tokens[pos+1]&&tokens[pos+1].type==="DOT"&&tokens[pos+2]&&tokens[pos+2].type==="STAR"){const tb=advance().value;advance();advance();cols.push({expr:{type:"table_star",table:tb},alias:null});continue}const expr=parseExpr();let alias=null;if(matchKW("AS"))alias=advance().value;else if(peek()&&peek().type==="IDENTIFIER"&&!isKW(peek().value))alias=advance().value;cols.push({expr,alias})}while(match("COMMA"));return cols}
+function parseTRef(){const t=advance();if(!t)throw new Error("Station-Alert: Tabellenname fehlt.");let alias=null;if(matchKW("AS"))alias=advance().value;else if(peek()&&peek().type==="IDENTIFIER"&&!isKW(peek().value))alias=advance().value;return{table:t.value,alias}}
+function parseJoins(){const joins=[];while(peek()&&peek().type==="KEYWORD"&&["JOIN","INNER","LEFT","RIGHT","CROSS"].includes(peek().value)){let jt="INNER";const kw=peek().value;if(kw==="LEFT"){advance();jt="LEFT";matchKW("OUTER")}else if(kw==="RIGHT"){advance();jt="RIGHT";matchKW("OUTER")}else if(kw==="CROSS"){advance();jt="CROSS"}else if(kw==="INNER")advance();expect("KEYWORD","JOIN");const ref=parseTRef();let on=null;if(matchKW("ON"))on=parseExpr();joins.push({type:jt,...ref,on})}return joins}
+function parseExpr(){return parseOr()}
+function parseOr(){let l=parseAnd();while(peek()&&peek().type==="KEYWORD"&&peek().value==="OR"){advance();l={type:"binop",op:"OR",left:l,right:parseAnd()}}return l}
+function parseAnd(){let l=parseNot();while(peek()&&peek().type==="KEYWORD"&&peek().value==="AND"){advance();l={type:"binop",op:"AND",left:l,right:parseNot()}}return l}
+function parseNot(){if(peek()&&peek().type==="KEYWORD"&&peek().value==="NOT"){advance();return{type:"unop",op:"NOT",expr:parseCmp()}}return parseCmp()}
+function parseCmp(){let l=parsePri();const t=peek();if(!t)return l;if(t.type==="OPERATOR"){const op=advance().value;return{type:"binop",op,left:l,right:parsePri()}}if(t.type==="KEYWORD"){if(t.value==="IS"){advance();const neg=matchKW("NOT");expect("KEYWORD","NULL");return{type:"is_null",expr:l,negated:neg}}if(t.value==="NOT"){advance();if(peek()&&peek().value==="LIKE"){advance();return{type:"binop",op:"NOT LIKE",left:l,right:parsePri()}}if(peek()&&peek().value==="IN"){advance();return{type:"not_in",expr:l,values:parseInL()}}if(peek()&&peek().value==="BETWEEN"){advance();return parseBtw(l,true)}throw new Error("Station-Alert: Nach NOT wird LIKE, IN oder BETWEEN erwartet.")}if(t.value==="LIKE"){advance();return{type:"binop",op:"LIKE",left:l,right:parsePri()}}if(t.value==="IN"){advance();return{type:"in",expr:l,values:parseInL()}}if(t.value==="BETWEEN"){advance();return parseBtw(l,false)}}return l}
+function parseInL(){expect("LPAREN");const v=[];do{v.push(parsePri())}while(match("COMMA"));expect("RPAREN");return v}
+function parseBtw(expr,neg){const lo=parsePri();expect("KEYWORD","AND");const hi=parsePri();return{type:"between",expr,low:lo,high:hi,negated:neg}}
+function parsePri(){const t=peek();if(!t)throw new Error("Station-Alert: Unerwartetes Ende.");if(t.type==="NUMBER"){advance();return{type:"literal",value:t.value}}if(t.type==="STRING"){advance();return{type:"literal",value:t.value}}if(t.type==="KEYWORD"&&t.value==="NULL"){advance();return{type:"literal",value:null}}if(t.type==="KEYWORD"&&["COUNT","SUM","AVG","MIN","MAX"].includes(t.value)){const fn=advance().value;expect("LPAREN");let arg;if(peek()&&peek().type==="STAR"){advance();arg={type:"star"}}else if(matchKW("DISTINCT")){arg={type:"distinct_arg",expr:parseExpr()}}else{arg=parseExpr()}expect("RPAREN");return{type:"function",name:fn,arg}}if(t.type==="LPAREN"){advance();const e=parseExpr();expect("RPAREN");return e}if(t.type==="STAR"){advance();return{type:"star"}}if(t.type==="IDENTIFIER"||t.type==="KEYWORD"){return{type:"column",name:advance().value}}throw new Error(`Station-Alert: Unerwartetes Token '${t.value}'.`)}
+function parseInsert(){expect("KEYWORD","INSERT");expect("KEYWORD","INTO");const table=advance().value;let cols=null;if(match("LPAREN")){cols=[];do{cols.push(advance().value)}while(match("COMMA"));expect("RPAREN")}expect("KEYWORD","VALUES");const rows=[];do{expect("LPAREN");const v=[];do{v.push(parsePri())}while(match("COMMA"));expect("RPAREN");rows.push(v)}while(match("COMMA"));match("SEMICOLON");return{type:"INSERT",table,columns:cols,values:rows}}
+function parseUpdate(){expect("KEYWORD","UPDATE");const table=advance().value;expect("KEYWORD","SET");const sets=[];do{const col=advance().value;expect("OPERATOR","=");sets.push({column:col,value:parseExpr()})}while(match("COMMA"));const where=matchKW("WHERE")?parseExpr():null;match("SEMICOLON");return{type:"UPDATE",table,sets,where}}
+function parseDelete(){expect("KEYWORD","DELETE");expect("KEYWORD","FROM");const table=advance().value;const where=matchKW("WHERE")?parseExpr():null;match("SEMICOLON");return{type:"DELETE",table,where}}
+function parseCreate(){expect("KEYWORD","CREATE");expect("KEYWORD","TABLE");const table=advance().value;expect("LPAREN");const cols=[];do{const name=advance().value;let ct="TEXT";if(peek()&&(peek().type==="IDENTIFIER"||(peek().type==="KEYWORD"&&["INT","TEXT","INTEGER","REAL","FLOAT","DATE","BOOLEAN"].includes(peek().value))))ct=advance().value.toUpperCase();if(match("LPAREN")){while(peek()&&peek().type!=="RPAREN")advance();expect("RPAREN")}while(peek()&&peek().type==="KEYWORD"&&["NOT","NULL","PRIMARY","KEY","UNIQUE","DEFAULT"].includes(peek().value))advance();cols.push({name,type:ct})}while(match("COMMA"));expect("RPAREN");match("SEMICOLON");return{type:"CREATE",table,columns:cols}}
+function parseDrop(){expect("KEYWORD","DROP");expect("KEYWORD","TABLE");const table=advance().value;match("SEMICOLON");return{type:"DROP",table}}}
+
+function resolveCol(name,row,cm){const l=name.toLowerCase();if(l in cm)return row[cm[l]];const m=Object.keys(cm).filter(k=>k===l||k.endsWith("."+l));if(m.length===1)return row[cm[m[0]]];if(m.length>1)throw new Error(`Station-Alert: Spalte '${name}' ist mehrdeutig.`);throw new Error(`Station-Alert: Spalte '${name}' nicht gefunden.`)}
+function evalExpr(e,row,cm){if(!e)return null;switch(e.type){case"literal":return e.value;case"column":return resolveCol(e.name,row,cm);case"star":return"*";case"binop":{if(e.op==="AND")return!!evalExpr(e.left,row,cm)&&!!evalExpr(e.right,row,cm);if(e.op==="OR")return!!evalExpr(e.left,row,cm)||!!evalExpr(e.right,row,cm);const l=evalExpr(e.left,row,cm),r=evalExpr(e.right,row,cm);switch(e.op){case"=":case"==":return l==r;case"!=":case"<>":return l!=r;case"<":return l<r;case">":return l>r;case"<=":return l<=r;case">=":return l>=r;case"LIKE":case"NOT LIKE":{if(l===null||r===null)return false;const p="^"+String(r).replace(/%/g,".*").replace(/_/g,".")+"$";const res=new RegExp(p,"i").test(String(l));return e.op==="NOT LIKE"?!res:res}default:return null}}case"unop":return e.op==="NOT"?!evalExpr(e.expr,row,cm):null;case"is_null":{const v=evalExpr(e.expr,row,cm);return e.negated?v!==null&&v!==undefined:v===null||v===undefined}case"in":return e.values.map(x=>evalExpr(x,row,cm)).includes(evalExpr(e.expr,row,cm));case"not_in":return!e.values.map(x=>evalExpr(x,row,cm)).includes(evalExpr(e.expr,row,cm));case"between":{const v=evalExpr(e.expr,row,cm),lo=evalExpr(e.low,row,cm),hi=evalExpr(e.high,row,cm);const r=v>=lo&&v<=hi;return e.negated?!r:r}case"function":return null;default:return null}}
+function colLabel(c){if(c.alias)return c.alias;if(c.expr.type==="column")return c.expr.name.split(".").pop();if(c.expr.type==="star")return"*";if(c.expr.type==="function"){const a=c.expr.arg.type==="star"?"*":(c.expr.arg.type==="column"?c.expr.arg.name.split(".").pop():"expr");return`${c.expr.name}(${a})`}return"?"}
+function executeSQL(sql,database){const db=JSON.parse(JSON.stringify(database));const ast=parseSQL(sql);switch(ast.type){case"SELECT":return execSel(ast,db);case"INSERT":return execIns(ast,db);case"UPDATE":return execUpd(ast,db);case"DELETE":return execDel(ast,db);case"CREATE":return execCre(ast,db);case"DROP":return execDrp(ast,db);default:throw new Error("Unbekannt.")}}
+function execSel(ast,db){const tn=ast.from.table.toLowerCase();if(!(tn in db))throw new Error(`Station-Alert: Tabelle '${ast.from.table}' nicht gefunden. Verfuegbar: ${Object.keys(db).join(", ")}`);const table=db[tn];const ta=(ast.from.alias||ast.from.table).toLowerCase();let cm={},ac=[],cs=[];table.columns.forEach((c,i)=>{cm[c.toLowerCase()]=i;cm[`${ta}.${c.toLowerCase()}`]=i;ac.push(c);cs.push(ta)});let rows=table.rows.map(r=>[...r]);for(const j of ast.joins){const jn=j.table.toLowerCase();if(!(jn in db))throw new Error(`Station-Alert: Tabelle '${j.table}' nicht gefunden.`);const jt=db[jn],ja=(j.alias||j.table).toLowerCase(),off=ac.length;jt.columns.forEach((c,i)=>{cm[`${ja}.${c.toLowerCase()}`]=off+i;if(!(c.toLowerCase()in cm))cm[c.toLowerCase()]=off+i});jt.columns.forEach(c=>{ac.push(c);cs.push(ja)});const nr=[];if(j.type==="LEFT"){for(const r of rows){let m=false;for(const jr of jt.rows){const c=[...r,...jr];if(!j.on||evalExpr(j.on,c,cm)){nr.push(c);m=true}}if(!m)nr.push([...r,...new Array(jt.columns.length).fill(null)])}}else if(j.type==="CROSS"){for(const r of rows)for(const jr of jt.rows)nr.push([...r,...jr])}else{for(const r of rows)for(const jr of jt.rows){const c=[...r,...jr];if(!j.on||evalExpr(j.on,c,cm))nr.push(c)}}rows=nr}if(ast.where)rows=rows.filter(r=>evalExpr(ast.where,r,cm));let ec=[];for(const col of ast.columns){if(col.expr.type==="star")ac.forEach((c,i)=>ec.push({expr:{type:"column",name:`${cs[i]}.${c}`},alias:null,_o:c}));else if(col.expr.type==="table_star"){const tb=col.expr.table.toLowerCase();ac.forEach((c,i)=>{if(cs[i]===tb)ec.push({expr:{type:"column",name:`${tb}.${c}`},alias:null,_o:c})})}else ec.push(col)}const hasAgg=ec.some(c=>c.expr.type==="function"&&["COUNT","SUM","AVG","MIN","MAX"].includes(c.expr.name));if(ast.groupBy||hasAgg){const groups=new Map();if(ast.groupBy){for(const r of rows){const k=ast.groupBy.map(g=>String(evalExpr(g,r,cm))).join("|||");if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)}}else groups.set("__all__",[...rows]);const ar=[];for(const[,grp]of groups){ar.push(ec.map(col=>{if(col.expr.type==="function"&&["COUNT","SUM","AVG","MIN","MAX"].includes(col.expr.name)){const vals=grp.map(r=>{if(col.expr.arg.type==="star")return 1;if(col.expr.arg.type==="distinct_arg")return evalExpr(col.expr.arg.expr,r,cm);return evalExpr(col.expr.arg,r,cm)}).filter(v=>v!==null&&v!==undefined);switch(col.expr.name){case"COUNT":return col.expr.arg.type==="distinct_arg"?new Set(vals).size:vals.length;case"SUM":return vals.reduce((a,b)=>a+Number(b),0);case"AVG":return vals.length?Math.round(vals.reduce((a,b)=>a+Number(b),0)/vals.length*100)/100:0;case"MIN":return vals.length?Math.min(...vals.map(Number)):null;case"MAX":return vals.length?Math.max(...vals.map(Number)):null;default:return null}}return evalExpr(col.expr,grp[0],cm)}))}rows=ar;if(ast.having){const hm={};ec.forEach((c,i)=>{hm[colLabel(c).toLowerCase()]=i;if(c._o)hm[c._o.toLowerCase()]=i});rows=rows.filter(r=>evalExpr(ast.having,r,hm))}}else{rows=rows.map(r=>ec.map(c=>evalExpr(c.expr,r,cm)))}if(ast.distinct){const s=new Set();rows=rows.filter(r=>{const k=JSON.stringify(r);if(s.has(k))return false;s.add(k);return true})}if(ast.orderBy){const om={};ec.forEach((c,i)=>{om[colLabel(c).toLowerCase()]=i;if(c._o)om[c._o.toLowerCase()]=i});rows.sort((a,b)=>{for(const o of ast.orderBy){let n=o.expr.type==="column"?o.expr.name.toLowerCase().split(".").pop():null;let idx=n?(om[n]??om[o.expr.name.toLowerCase()]):0;if(idx===undefined)idx=0;const ai=a[idx],bi=b[idx];if(ai===bi)continue;if(ai===null)return 1;if(bi===null)return-1;const c=typeof ai==="string"?ai.localeCompare(bi):ai-bi;if(c!==0)return o.dir==="DESC"?-c:c}return 0})}if(ast.limit!=null)rows=rows.slice(0,ast.limit);return{type:"result",columns:ec.map(c=>c.alias||c._o||colLabel(c)),rows,message:`${rows.length} Datensatz${rows.length!==1?"e":""} gefunden.`}}
+function execIns(ast,db){const t=ast.table.toLowerCase();if(!(t in db))throw new Error(`Tabelle '${ast.table}' existiert nicht.`);const tbl=db[t];let cnt=0;for(const vR of ast.values){const row=[];const cols=ast.columns||tbl.columns;for(let i=0;i<tbl.columns.length;i++){const ci=cols.findIndex(c=>c.toLowerCase()===tbl.columns[i].toLowerCase());if(ci>=0&&ci<vR.length){const v=vR[ci];row.push(v.type==="literal"?v.value:evalExpr(v,[],{}))}else row.push(null)}tbl.rows.push(row);cnt++}return{type:"modify",message:`${cnt} Datensatz${cnt!==1?"e":""} eingefuegt.`,db}}
+function execUpd(ast,db){const t=ast.table.toLowerCase();if(!(t in db))throw new Error(`Tabelle '${ast.table}' existiert nicht.`);const tbl=db[t],cm={};tbl.columns.forEach((c,i)=>{cm[c.toLowerCase()]=i});let cnt=0;for(const row of tbl.rows){if(!ast.where||evalExpr(ast.where,row,cm)){for(const s of ast.sets){const ci=cm[s.column.toLowerCase()];if(ci===undefined)throw new Error(`Spalte '${s.column}' nicht gefunden.`);row[ci]=evalExpr(s.value,row,cm)}cnt++}}return{type:"modify",message:`${cnt} Datensatz${cnt!==1?"e":""} aktualisiert.`,db}}
+function execDel(ast,db){const t=ast.table.toLowerCase();if(!(t in db))throw new Error(`Tabelle '${ast.table}' existiert nicht.`);const tbl=db[t],cm={};tbl.columns.forEach((c,i)=>{cm[c.toLowerCase()]=i});const before=tbl.rows.length;tbl.rows=tbl.rows.filter(row=>ast.where?!evalExpr(ast.where,row,cm):false);const cnt=before-tbl.rows.length;return{type:"modify",message:`${cnt} Datensatz${cnt!==1?"e":""} geloescht.`,db}}
+function execCre(ast,db){const t=ast.table.toLowerCase();if(t in db)throw new Error(`Tabelle existiert bereits.`);db[t]={columns:ast.columns.map(c=>c.name),types:ast.columns.map(c=>c.type),rows:[]};return{type:"modify",message:`Tabelle '${ast.table}' erstellt.`,db}}
+function execDrp(ast,db){const t=ast.table.toLowerCase();if(!(t in db))throw new Error(`Tabelle existiert nicht.`);delete db[t];return{type:"modify",message:`Tabelle '${ast.table}' geloescht.`,db}}
+
+// ─── APP STATE ──────────────────────────────────────────────────
+let db = JSON.parse(JSON.stringify(INIT_DB));
+let mIdx = 0;
+let completed = new Set();
+let hintsRevealed = 0;
+let sandboxMode = false;
+let schemaOpen = false;
+let mobileTab = "terminal";
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ─── RENDER FUNCTIONS ───────────────────────────────────────────
+function render() {
+  renderHeader();
+  renderMissions();
+  renderStory();
+  renderHints();
+  renderSchema();
+}
+
+function renderHeader() {
+  const pct = Math.round((completed.size / MISSIONS.length) * 100);
+  document.getElementById('hdr-count').textContent = `${completed.size}/${MISSIONS.length}`;
+  document.getElementById('hdr-progress').style.width = `${pct}%`;
+}
+
+function renderMissions() {
+  const el = document.getElementById('mission-list');
+  const tM = document.getElementById('tab-missions');
+  const tS = document.getElementById('tab-sandbox');
+  tM.className = `mode-tab${!sandboxMode?' active-missions':''}`;
+  tS.className = `mode-tab${sandboxMode?' active-sandbox':''}`;
+  let html = '';
+  MISSIONS.forEach((m, i) => {
+    const done = completed.has(i);
+    const active = i === mIdx && !sandboxMode;
+    const locked = !isUnlocked(i);
+    const badge = done ? 'done' : locked ? 'locked' : 'open';
+    const icon = done ? '✓' : locked ? '·' : m.id;
+    html += `<button class="mission-btn${active?' active':''}" ${locked?'disabled':''} onclick="selectMission(${i})">
+      <div class="mission-badge ${badge}">${icon}</div>
+      <div style="min-width:0;flex:1">
+        <div class="mission-title${done?' done-title':''}">${esc(m.title)}</div>
+        <div class="mission-cat${m.bonus?' bonus':''}">${m.bonus?'★ BONUS':esc(m.category)}</div>
+      </div>
+    </button>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderStory() {
+  const el = document.getElementById('story-area');
+  const m = MISSIONS[mIdx];
+  if (sandboxMode) {
+    el.innerHTML = `<div class="sandbox-bar">
+      <div><div class="s-title">SANDBOX</div><div class="s-sub">Freies Experimentieren.</div></div>
+      <button class="btn-reset" onclick="resetDB()">DB RESET</button>
+    </div>`;
+  } else {
+    const cls = m.bonus ? 'gold' : 'cyan';
+    el.innerHTML = `<div class="story-box">
+      <div class="story-title ${cls}">${m.bonus?'★ ':''}MISSION ${m.id}: ${esc(m.title.toUpperCase())}</div>
+      <div class="story-text">${esc(m.story)}</div>
+      <div class="task-box"><span class="lbl">AUFGABE: </span>${esc(m.task)}</div>
+    </div>`;
+  }
+}
+
+function renderHints() {
+  const el = document.getElementById('hints-area');
+  if (sandboxMode) {
+    el.innerHTML = `<div class="hints-section"><div class="hints-title" style="color:var(--c)">SANDBOX-MODUS</div><div style="font-size:11px;color:#00e5ff60">Alle SQL-Befehle verfuegbar.</div></div>`;
+    return;
+  }
+  const m = MISSIONS[mIdx];
+  let html = `<div class="hints-section"><div class="hints-title">HINWEISE (${hintsRevealed}/${m.hints.length})</div>`;
+  m.hints.forEach((h, i) => {
+    if (i < hintsRevealed) {
+      html += `<div class="hint-item revealed">${esc(h)}</div>`;
+    } else if (i === hintsRevealed) {
+      html += `<div class="hint-item hidden" onclick="revealHint()">💡 Hinweis ${i+1} aufdecken</div>`;
+    } else {
+      html += `<div class="hint-item hidden">💡 Hinweis ${i+1} aufdecken</div>`;
+    }
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderSchema() {
+  const el = document.getElementById('schema-area');
+  let html = `<button class="btn-schema${schemaOpen?' open':''}" onclick="toggleSchema()">${schemaOpen?'▾':'▸'} DATENBANK-SCHEMA</button>`;
+  if (schemaOpen) {
+    for (const [name, table] of Object.entries(db)) {
+      html += `<div class="schema-card"><div class="s-header"><span>${name.toUpperCase()}</span><span class="s-count">${table.rows.length}</span></div><div class="s-cols">`;
+      table.columns.forEach((col, ci) => {
+        html += `<div class="s-col"><span>${esc(col)}</span><span class="s-type">${table.types[ci]}</span></div>`;
+      });
+      html += `</div><div class="s-sample"><div class="s-lbl">SAMPLE</div><table style="width:100%;border-collapse:collapse">`;
+      table.rows.slice(0, 2).forEach(row => {
+        html += '<tr>';
+        row.forEach(cell => {
+          html += `<td>${cell===null?'null':esc(String(cell))}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</table></div></div>';
+    }
+  } else {
+    html += '<div class="schema-note">Schema aufklappen fuer Tabellenstruktur.</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderOutput(result, error, successMsg) {
+  const el = document.getElementById('output-area');
+  let html = '';
+
+  if (successMsg) {
+    html += `<div class="card-success"><div class="c-title">✅ MISSION ABGESCHLOSSEN</div><div class="c-text">${esc(successMsg)}</div>`;
+    if (mIdx < MISSIONS.length - 1) {
+      html += `<button class="btn-next" onclick="selectMission(${mIdx + 1})">Naechste Mission →</button>`;
+    }
+    if (completed.size === MISSIONS.length) {
+      html += '<div class="trophy">🏆 ALLE MISSIONEN ABGESCHLOSSEN!</div>';
+    }
+    html += '</div>';
+  }
+
+  if (error) {
+    html += `<div class="card-error"><div class="c-title">⚠ FEHLER</div><div class="c-text">${esc(error)}</div></div>`;
+  }
+
+  if (result && result.type === 'result') {
+    html += `<div class="result-label">OUTPUT - ${esc(result.message)}</div><div class="result-wrap"><table class="result-table"><thead><tr>`;
+    result.columns.forEach(c => { html += `<th>${esc(String(c).toUpperCase())}</th>`; });
+    html += '</tr></thead><tbody>';
+    if (result.rows.length === 0) {
+      html += `<tr class="empty-row"><td colspan="${result.columns.length}">Keine Ergebnisse.</td></tr>`;
+    } else {
+      result.rows.forEach(row => {
+        html += '<tr>';
+        row.forEach(cell => {
+          html += cell === null ? '<td class="null-val">NULL</td>' : `<td>${esc(String(cell))}</td>`;
+        });
+        html += '</tr>';
+      });
+    }
+    html += '</tbody></table></div>';
+  }
+
+  if (result && result.type === 'modify' && !successMsg) {
+    html += `<div class="card-modify"><div class="c-title">✔ AUSGEFUEHRT</div><div class="c-text">${esc(result.message)}</div></div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ─── ACTIONS ────────────────────────────────────────────────────
+function isUnlocked(i) {
+  if (i === 0) return true;
+  return completed.has(i - 1);
+}
+
+function selectMission(i) {
+  if (!isUnlocked(i)) return;
+  Audio.click();
+  mIdx = i;
+  document.getElementById('sql-input').value = '';
+  hintsRevealed = 0;
+  sandboxMode = false;
+  document.getElementById('output-area').innerHTML = '';
+  if (window.innerWidth <= 768) setMobileTab('terminal');
+  render();
+}
+
+function setMode(isSandbox) {
+  Audio.click();
+  sandboxMode = isSandbox;
+  document.getElementById('output-area').innerHTML = '';
+  if (window.innerWidth <= 768) setMobileTab('terminal');
+  render();
+}
+
+function resetDB() {
+  db = JSON.parse(JSON.stringify(INIT_DB));
+  Audio.click();
+  document.getElementById('output-area').innerHTML = '';
+  renderSchema();
+}
+
+function revealHint() {
+  Audio.hint();
+  hintsRevealed = Math.min(hintsRevealed + 1, MISSIONS[mIdx].hints.length);
+  renderHints();
+}
+
+function toggleSchema() {
+  Audio.click();
+  schemaOpen = !schemaOpen;
+  renderSchema();
+}
+
+function runQuery() {
+  Audio.click();
+  const input = document.getElementById('sql-input');
+  const sql = input.value.trim();
+  input.classList.remove('error');
+
+  if (!sql) {
+    input.classList.add('error');
+    setTimeout(() => input.classList.remove('error'), 400);
+    Audio.error();
+    renderOutput(null, "Station-Alert: Kein Befehl eingegeben.", null);
+    return;
+  }
+
+  try {
+    const res = executeSQL(sql, db);
+    if (res.type === 'modify' && res.db) db = res.db;
+
+    let successMsg = null;
+    const m = MISSIONS[mIdx];
+    if (!sandboxMode && m && m.validate(res)) {
+      successMsg = m.success;
+      completed.add(mIdx);
+      Audio.success();
+      renderHeader();
+      renderMissions();
+      if (res.type === 'modify') renderSchema();
+    }
+    renderOutput(res, null, successMsg);
+    if (res.type === 'modify') renderSchema();
+  } catch (e) {
+    input.classList.add('error');
+    setTimeout(() => input.classList.remove('error'), 400);
+    Audio.error();
+    renderOutput(null, e.message, null);
+  }
+}
+
+function setMobileTab(tab) {
+  Audio.click();
+  mobileTab = tab;
+  const app = document.getElementById('app');
+  app.classList.remove('mobile-missions', 'mobile-help');
+  if (tab === 'missions') app.classList.add('mobile-missions');
+  if (tab === 'help') app.classList.add('mobile-help');
+
+  document.querySelectorAll('.nav-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+}
+
+// ─── KEYBOARD ───────────────────────────────────────────────────
+document.getElementById('sql-input').addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runQuery(); }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = this.selectionStart, end = this.selectionEnd;
+    this.value = this.value.substring(0, s) + '  ' + this.value.substring(end);
+    this.selectionStart = this.selectionEnd = s + 2;
+  }
+});
+
+// ─── BOOT ───────────────────────────────────────────────────────
+setTimeout(() => {
+  document.getElementById('boot-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  Audio.boot();
+  render();
+}, 600);
+</script>
+</body>
+</html>
