@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AP2 Fachinformatiker Systemintegration - Interaktives Lernportal mit Prüfungssimulation und Quiz">
+    <meta name="keywords" content="AP2, Fachinformatiker, Systemintegration, Prüfung, Quiz">
     <title>AP2 Fachinformatiker Systemintegration - Lernportal</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -145,30 +147,116 @@
             </div>
         </section>
 
-        <!-- Quiz Interface -->
-        <div id="quiz-modal" class="modal hidden">
-            <div class="quiz-container">
-                <div class="quiz-header">
-                    <span id="question-counter">Frage 1/10</span>
-                    <span id="quiz-timer" class="timer">15:00</span>
-                    <button class="close-btn" onclick="closeQuiz()">×</button>
+        <!-- Fortschritt -->
+        <section id="fortschritt" class="section">
+            <h2>📈 Dein Fortschritt</h2>
+            <div class="progress-container">
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span>Projektmanagement</span>
+                        <span id="projekt-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-full">
+                        <div class="progress-bar-fill" id="projekt-bar" style="width: 0%"></div>
+                    </div>
                 </div>
-                <div class="progress-bar">
-                    <div id="progress-fill" class="progress-fill"></div>
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span>Netzwerktechnik</span>
+                        <span id="netzwerk-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-full">
+                        <div class="progress-bar-fill" id="netzwerk-bar" style="width: 0%"></div>
+                    </div>
                 </div>
-                <div id="question-container" class="question-container">
-                    <!-- Fragen werden hier dynamisch geladen -->
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span>Systemadministration</span>
+                        <span id="system-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-full">
+                        <div class="progress-bar-fill" id="system-bar" style="width: 0%"></div>
+                    </div>
                 </div>
-                <div id="quiz-controls" class="quiz-controls">
-                    <button id="next-btn" class="btn btn-primary" onclick="nextQuestion()" disabled>Weiter</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Quiz Interface -->
+    <div id="quiz-modal" class="modal hidden">
+        <div class="quiz-container">
+            <div class="quiz-header">
+                <span id="question-counter">Frage 1/10</span>
+                <span id="quiz-timer" class="timer">15:00</span>
+                <button class="close-btn" onclick="closeQuiz()">×</button>
+            </div>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div id="question-container" class="question-container">
+                <!-- Fragen werden hier dynamisch geladen -->
+            </div>
+            <div id="quiz-controls" class="quiz-controls">
+                <button id="prev-btn" class="btn btn-secondary" onclick="prevQuestion()" disabled>← Zurück</button>
+                <button id="next-btn" class="btn btn-primary" onclick="nextQuestion()" disabled>Weiter →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ergebnis Modal -->
+    <div id="result-modal" class="modal hidden">
+        <div class="result-container">
+            <h2 id="result-title">Prüfung beendet!</h2>
+            <div class="result-score">
+                <span id="result-percent">0%</span>
+                <span id="result-text">Punkte</span>
+            </div>
+            <div id="result-feedback" class="result-feedback">
+                <!-- Feedback basierend auf Ergebnis -->
+            </div>
+            <div class="result-details">
+                <p><strong>Richtige Antworten:</strong> <span id="correct-count">0</span>/<span id="total-count">0</span></p>
+                <p><strong>Zeitaufwand:</strong> <span id="time-spent">0</span> Minuten</p>
+            </div>
+            <button class="btn btn-primary" onclick="closeResult()">Zurück zur Übersicht</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Über das Portal</h4>
+                <p>Ein interaktives Lernportal zur Vorbereitung auf die AP2-Prüfung für Fachinformatiker Systemintegration.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Kontakt</h4>
+                <ul>
+                    <li><a href="mailto:support@ap2-lernportal.de">support@ap2-lernportal.de</a></li>
+                    <li><a href="tel:+49123456789">+49 (0) 123 456789</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Links</h4>
+                <ul>
+                    <li><a href="#">Impressum</a></li>
+                    <li><a href="#">Datenschutz</a></li>
+                    <li><a href="#">Nutzungsbedingungen</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Folge uns</h4>
+                <div class="social-links">
+                    <a href="#">📘 Facebook</a>
+                    <a href="#">🐦 Twitter</a>
+                    <a href="#">💼 LinkedIn</a>
                 </div>
             </div>
         </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 AP2-Lernportal. Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
 
-        <!-- Ergebnis Modal -->
-        <div id="result-modal" class="modal hidden">
-            <div class="result-container">
-                <h2 id="result-title">Prüfung beendet!</h2>
-                <div class="result-score">
-                    <span id="result-percent">0%</span>
-                    <span id="result
+    <script src="script.js"></script>
+</body>
+</html>
